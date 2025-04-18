@@ -1,0 +1,19 @@
+flowchart TD
+  subgraph EDGE["Edge Layer"]
+    B1["Ingress Layer<br/>(CDN, TLS, Routing)"]
+    B2["API Gateway<br/>(Auth, Rate Limits)<br/>(Optional)"]
+
+  end
+
+  A["Client Layer<br/>(Mobile/Web)"] --> B1
+
+  %% Make the API‑GW link optional and show direct ingress → business path
+  B1 -- “App‑only, no API GW” --> C
+  B1 -- “Public API” --> B2
+  B2 --> C
+
+  subgraph BUSINESS["Business Layer"]
+    C["App Logic, BFF, Services, Service Mesh"]
+  end
+
+  C --> D[("Data Layer<br/>(Databases, Object Storage)")]
