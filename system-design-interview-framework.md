@@ -187,7 +187,6 @@
   - 5.5 **Architecture Styles**  
     - Monolith, modular monolith, or microservices: each can host BFFs and sidecars.  
     - With microservices, you typically deploy BFFs and sidecars in the same cluster, but route traffic via the ingress/API gateway.<br>
-    _See generally [Monolith to Microservices](https://martinfowler.com/bliki/MonolithFirst.html)._
 
   - 5.6 **Communication Patterns**  
     - Synchronous RPC (REST, [gRPC](https://grpc.io/)) for BFF→Domain and Domain→Domain calls, all secured by the mesh.  
@@ -212,6 +211,11 @@
         - Core services often use request-based RPC, while async workflows (e.g., billing, notifications, ML pipelines) are handled via events.
         - Events are also used to power downstream consumers: audit logs, analytics, or materialized views.
     - Most systems combine both: sync for control paths, async for data and side effects.
+    - **Reference Articles**:
+      - [Request-Driven vs. Event-Driven Architecture Overview](https://www.geeksforgeeks.org/request-driven-vs-event-driven-microservices/)
+      - [Request-Driven (RESTful) vs Event-Driven in Microservices](https://blog.getambassador.io/request-driven-restful-vs-event-driven-in-microservices-82798cba80d5)
+      - [Event-Driven Architecture Fundamentals and Common Pitfalls](https://hookdeck.com/blog/event-driven-architectrure-fundamentals-pitfalls)
+      - [Exploring Event-Driven Architecture: A Beginner's Guide for Cloud Native Developers](https://wso2.com/blogs/thesource/exploring-event-driven-architecture-a-beginners-guide-for-cloud-native-developers/)
 
   - 5.11 **Ownership**
     - BFFs often owned by the feature or frontend‑platform team.  
@@ -253,7 +257,7 @@
     - **Graph**: Complex many‑to‑many relationships, deep traversals.
     - **Time‑Series**: High‑frequency timestamped writes, windowed queries.
     - **Search**: Text search, analytics, log exploration.<br>
-    _**Caution**: Don’t pick NoSQL merely to avoid schema design: poor data models create hidden debt._
+    - _**Caution**: Don’t pick NoSQL merely to avoid schema design: poor data models create hidden debt._
 
   - 6.3 [CAP Theorem](https://www.bmc.com/blogs/cap-theorem/) & ACID Trade‑Offs  
     - **CAP Theorem** (under network partition)
@@ -366,28 +370,13 @@
 
   - 9.3 **Migration & Evolution Strategies**  
     - **Monolith to Microservices**: incremental extraction ([strangler‑fig pattern](https://martinfowler.com/bliki/StranglerFigApplication.html)).
-    - **Modular Monolith**: adopt modules before splitting into services. 
-    - **Schema Versioning**: backward/forward‑compatible migrations, dual writes.
-    - **Feature Toggles**: safe rollout, canary releases, controlled deprecation.
+    - **Modular Monolith**: adopt modules before splitting into services. ["monolith first" model](https://martinfowler.com/bliki/MonolithFirst.html)
+      - Start with a well‑modularised monolith, postpone the complexity premium of microservices, and let real usage teach you where the service boundaries should be before you carve them out.
 
   - 9.4 **Trade‑Offs & Failure Modes**  
     _Covered in Sections 6.3 (“CAP Theorem & ACID Trade‑Offs”), 7.4 (“Performance Optimizations”), and 8.4 (“Security Controls”)._
 
-  - 9.5 **System Evolution Patterns**  
-    - Feature toggles, schema versioning, modularization over time.
-
-  - 9.6 **Design Trade-Off: Event-Driven or Not?**
-    - **Interviewer Prompt**: “Should your design use event-driven architecture? If not, why not?”
-      - This is a common axis for evaluating trade-off awareness. The right answer depends on the use case, desired coupling, and latency/throughput profile.
-    - **Choose Request-Driven When**:
-      - Simplicity, traceability, and strong consistency are critical.
-      - You need immediate feedback (e.g., checkout flows, profile edits).
-    - **Choose Event-Driven When**:
-      - Loose coupling, resiliency, or horizontal scalability is needed.
-      - You’re processing background work, derived data, or triggering workflows across domains.
-    - **Communicate Your Rationale**: Explain where you’ve applied events and why. Highlight how you’ve handled failure (retries, backoff), observability, and delivery guarantees.
-
-  - 9.7 **Tenancy Models**
+  - 9.5 **Tenancy Models**
     - **Single-Tenant Systems**: Each customer has a dedicated instance of the application and its data. Offers strong isolation and simplified debugging but incurs higher operational cost.
     - **Multi-Tenant Systems**: Multiple customers share infrastructure, with logical data separation via tenant IDs. More cost-effective and scalable, but introduces complexity around data access, security boundaries, and performance isolation.
     - **Hybrid Models**: Mix of pooled and siloed tenants — e.g., shared app layer but isolated databases or compute for high-paying customers.
@@ -396,19 +385,34 @@
       - What per-tenant quotas, rate limits, or billing hooks exist?
       - Can operational visibility be segmented by tenant?
     - Your architecture should account for tenant isolation, scaling patterns, and operational concerns from the beginning, even if you start single-tenant.
+    - **Reference Articles**:
+      - [Microsoft Learn: Tenancy Models](https://learn.microsoft.com/en-us/azure/architecture/guide/multitenant/considerations/tenancy-models)
+      - [AWS Whitepaper: SaaS Tenant Isolation Strategies](https://d1.awsstatic.com/whitepapers/saas-tenant-isolation-strategies.pdf)
 
-  - 9.8 **Platformization & Developer Experience**
-    - As systems and teams grow, consistency and velocity often become bottlenecks.
-    - Platformization reduces friction by providing internal tools, templates, and abstractions that standardize core patterns (e.g., service creation, auth integration, metrics).
-    - Developer experience (DX) initiatives improve build/run/debug loops and reduce context-switching overhead.
-    - Common practices:
-      - `create-service` CLIs or templates to scaffold new services with standard logging, tracing, metrics.
-      - Shared SDKs for internal APIs (auth, config, billing).
-      - Observability defaults: metrics, logs, alerts, and tracing pre-integrated into every service.
-      - Self-service IaC: infra modules for queues, DBs, feature flags, storage.
-    - A well-designed system should support internal reuse and allow teams to ship features safely and independently.
+  - 9.6 **Platformization & Developer Experience**  
+    - **Onboarding & Scaffolding**: provide code and infra templates, guided tutorials, and `create-service` generators to minimize ramp-up time.  
+    - **Local Development Experience**: enable reproducible dev environments (containers, proxies), fast build and run loops, hot-reloading, and integrated debuggers.  
+    - **Developer Tooling & CLI**: offer a unified CLI or SDK for common tasks (service creation, infrastructure provisioning, feature flag toggling, logs/metrics retrieval).  
+    - **Documentation & Discoverability**: maintain searchable, versioned docs, interactive API catalogs, architecture diagrams, and example code to reduce cognitive load.  
+    - **CI/CD & Fast Feedback**: implement quick pipelines with pre-commit/lint checks, unit and integration tests, PR previews, and actionable build/test results to shift quality left.  
+    - **Observability Integration**: bake in structured logging, metrics, distributed tracing, and alerting defaults into new services, plus standardized dashboard and alert templates.  
+    - **Testing Infrastructure**: provide test data generators, mocking frameworks, contract testing, and local integration or ephemeral environments for reliable verification.  
+    - **Standards & Governance**: enforce code style, security policies, and compliance automatically via shared libraries, config-as-code, and pre-built CI/CD gates.  
+    - **Self-Service Infrastructure**: enable developers to provision databases, queues, feature flags, and other resources through an internal portal or CLI without manual ops tickets.  
+    - **Developer Metrics & Improvement Loops**: track key metrics (build/test times, deployment frequency, lead time, failure rates) and gather developer satisfaction feedback to drive iterative DX enhancements.  
+    - **Culture & Community**: foster internal communities of practice, office hours, mentorship, and peer reviews to share knowledge and continuously evolve best practices.
+    - _See generally_: [Links to DevEx articles](https://github.com/workos/awesome-developer-experience?tab=readme-ov-file#articles)
 
-  - 9.9 **Testing & Pre-Prod Environments**
+  - 9.7 **Organizational Impact & Team Structure**
+    - [Conway's Law](https://melconway.com/Home/Conways_Law.html): Recognize that system architecture often mirrors the organization's communication structure. Design choices can be constrained by, or deliberately influence, team boundaries.<br>
+    See also: [Martin Fowler on Conway's Law](https://martinfowler.com/bliki/ConwaysLaw.html).
+    - Architecture & Teams: Different architectures lend themselves to different team structures and require distinct skill sets.
+      - Microservices: Often enable smaller, autonomous teams but require mature platform capabilities and operational practices. Consider the impact on inter-team communication and contracts.<br>
+      See: [Team Topologies](https://teamtopologies.com/) for patterns.
+      - Monoliths: May start simpler organizationally but can lead to development bottlenecks and complex dependencies as the system and team scale.
+    - Skills Alignment: Ensure the team possesses or can acquire the necessary skills (e.g., distributed systems, specific data stores, operational tooling) demanded by the chosen architecture.
+
+  - 9.8 **Testing & Pre-Prod Environments**
     - Mature systems rely on multiple environments to validate changes safely before production.
     - Common environments include:
       - **Staging**: Mirrors production as closely as possible for full end-to-end validation.
@@ -421,6 +425,7 @@
       - End-to-end tests for full system workflows (often via UI automation or API smoke tests).
       - Contract tests (e.g., [PACT](https://docs.pact.io/)) to detect breaking changes in upstream/downstream services.
     - Good pre-prod hygiene includes test data seeding, schema evolution checks, and observability parity with prod.
+    - _See_: [Environment Overview](https://www.abtasty.com/blog/test-environment/)
 
 
 
